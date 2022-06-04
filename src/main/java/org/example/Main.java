@@ -43,6 +43,14 @@ public class Main {
             //внутренный цикл
             final String message = readMessage(in);
             System.out.println("message = " + message);
+            switch (message){
+                case "time" :
+                    break;
+                case "shutdown":
+                    break;
+                default:
+                    out.write("Unknown command\n".getBytes(StandardCharsets.UTF_8));
+            }
         }
     }
 
@@ -62,7 +70,7 @@ public class Main {
             }
         }
         final String message = new String(
-                buffer,  offset, buffer.length - length, StandardCharsets.UTF_8
+                buffer,  0, buffer.length - length, StandardCharsets.UTF_8
         ).trim();
         return message;
 
