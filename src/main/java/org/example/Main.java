@@ -15,31 +15,9 @@ public class Main {
         ) {
             while (true) {
                 // блокирующий вызов
-                try (
-                        final Socket socket = serverSocket.accept();
-                        final OutputStream out = socket.getOutputStream();
-                        final InputStream in = socket.getInputStream();
-                ) {
-                    System.out.println(socket.getInetAddress());
-                    out.write("Enter command\n". getBytes(StandardCharsets.UTF_8));
-
-                    //внутренный цикл
-                    final byte[] buffer = new byte[4096];
-                    int offset = 0;
-                    int length = buffer.length;
-                    while (true) {
-                        final int read = in.read(buffer, offset, length); // read - сколько байт было прочитано
-                        offset +=read;
-                        length = buffer.length - offset;
-
-                        final byte lastByte = buffer[offset -1];
-
-                        if (lastByte == '\n') { // 13 - \r, 10 - \n
-                            break;
-                        }
-                    }
-                    final String message = new String(buffer,  offset, buffer.length - length, StandardCharsets.UTF_8).trim();
-                    System.out.println("message = " + message);
+                try {
+                final Socket socket = serverSocket.accept();
+                    handleClient(socket);
 
                     //  socket.getInputStream().read();
                 } catch (Exception e) {
@@ -50,6 +28,43 @@ public class Main {
             //если не удалось запустить сервер
             e.printStackTrace();
         }
+
+    }
+
+    private static void handleClient(Socket socket) throws IOException {
+        try (
+                socket; // закрывает ресурс
+                final OutputStream out = socket.getOutputStream();
+                final InputStream in = socket.getInputStream();
+        ) {
+            System.out.println(socket.getInetAddress());
+            out.write("Enter command\n".getBytes(StandardCharsets.UTF_8));
+
+            //внутренный цикл
+            final String message = readMessage(in);
+            System.out.println("message = " + message);
+        }
+    }
+
+    private static String readMessage(InputStream in) throws IOException {
+        final byte[] buffer = new byte[4096];
+        int offset = 0;
+        int length = buffer.length;
+        while (true) {
+            final int read = in.read(buffer, offset, length); // read - сколько байт было прочитано
+            offset +=read;
+            length = buffer.length - offset;
+
+            final byte lastByte = buffer[offset -1];
+
+            if (lastByte == '\n') { // 13 - \r, 10 - \n
+                break;
+            }
+        }
+        final String message = new String(
+                buffer,  offset, buffer.length - length, StandardCharsets.UTF_8
+        ).trim();
+        return message;
 
     }
 }
