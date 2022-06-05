@@ -14,9 +14,16 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 public class Server {
+
+    public static final byte[] CRLFCRLF = {'\r', '\n', '\r', '\n'};
+    private final int port = 9999;
+    private final int soTimeout = 1000;
+    private final int readTimeout = 60 * 1000;
+    private final int bufferSize = 4096;
+
     public void start() {
         try (
-                final ServerSocket serverSocket = new ServerSocket(9999)
+                final ServerSocket serverSocket = new ServerSocket(port)
         ) {
             while (true) {
                 // блокирующий вызов
@@ -38,7 +45,7 @@ public class Server {
     }
 
     private void handleClient(final Socket socket) throws IOException {
-        socket.setSoTimeout(30 * 1000);
+        socket.setSoTimeout(30 * soTimeout);
         try (
                 socket; // закрывает ресурс
                 final OutputStream out = socket.getOutputStream();
@@ -61,13 +68,12 @@ public class Server {
     }
 
     private String readMessage(final InputStream in) throws IOException {
-        final byte[] CRLFCRLF = {'\r', '\n', '\r', '\n'};// move to constants
-        final byte[] buffer = new byte[4096];
+        final byte[] buffer = new byte[bufferSize];
         int offset = 0;
         int length = buffer.length;
 
         //
-        final Instant deadline = Instant.now().plus(60, ChronoUnit.SECONDS);
+        final Instant deadline = Instant.now().plusMillis(readTimeout);
 
 
         while (true) {
