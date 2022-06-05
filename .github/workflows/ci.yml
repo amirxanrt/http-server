@@ -7,13 +7,18 @@ on:
 jobs:
   package: # я придумал сам
     runs-on: ubuntu-20.04
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v3 # скопирует репозиторий на эту машинку
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-      - run: mvn -B package # run - если пишем свою команду, а не готовый чей-то action
+      - run: mvn -B deploy # run - если пишем свою команду, а не готовый чей-то action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v3
         with:
           name: app # имя архива, который будет опубликован на GitHub'е
