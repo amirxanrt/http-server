@@ -2,6 +2,7 @@ package org.example;
 
 import com.google.common.primitives.Bytes;
 import org.example.exception.BadRequestException;
+import org.example.exception.DeadLineExceedEcxeption;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public class Main {
     public static void main(String[] args) {
@@ -35,6 +37,7 @@ public class Main {
     }
 
     private static void handleClient(Socket socket) throws IOException {
+        socket.setSoTimeout(30 * 1000);
         try (
                 socket; // закрывает ресурс
                 final OutputStream out = socket.getOutputStream();
@@ -61,17 +64,29 @@ public class Main {
         final byte[] buffer = new byte[4096];
         int offset = 0;
         int length = buffer.length;
+
+        //
+        final Instant deadline = Instant.now().plus(60, ChronoUnit.SECONDS);
+
+
         while (true) {
+            if (Instant.now().isAfter(deadline)){
+                throw new DeadLineExceedEcxeption();
+            }
             final int read = in.read(buffer, offset, length); // read - сколько байт было прочитано
             offset +=read;
             length = buffer.length - offset;
+
             final int headersEndIndex = Bytes.indexOf(buffer, CRLFCRLF);
             if (headersEndIndex != -1){
                 break;
 
             }
+            if (read == -1){
+                throw  new BadRequestException("CRLFCRLF not found, more data");
+            }
 
-            if (read == 0 || length == 0){
+            if (length == 0){
                 throw  new BadRequestException("CRLFCRLF not found");
             }
         }
