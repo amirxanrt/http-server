@@ -2,6 +2,7 @@ package org.example.server;
 
 import com.google.common.primitives.Bytes;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.example.server.exception.BadRequestException;
 import org.example.server.exception.DeadLineExceedEcxeption;
 
@@ -16,18 +17,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Setter
+@Slf4j
 public class Server {
 
     public static final byte[] CRLFCRLF = {'\r', '\n', '\r', '\n'};
     public static final byte[] CRLF = {'\r', '\n'};
     private  int port = 9999;
-    private  int soTimeout = 1000;
+    private  int soTimeout = 30 * 1000;
     private  int readTimeout = 60 * 1000;
     private  int bufferSize = 4096;
 
     private final Map<String, Handler> routes = new HashMap<>();
 
     public void start() {
+        log.info("start server");
         try (
                 final ServerSocket serverSocket = new ServerSocket(port)
         ) {
@@ -39,13 +42,13 @@ public class Server {
 
                     //  socket.getInputStream().read();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("client handling error", e);
                 }
             }
         } catch (
                 IOException e) {
             //если не удалось запустить сервер
-            e.printStackTrace();
+            log.error("server starting error", e);
         }
 
     }
@@ -56,13 +59,13 @@ public class Server {
                 final OutputStream out = socket.getOutputStream();
                 final InputStream in = socket.getInputStream()
         ) {
-            socket.setSoTimeout(30 * soTimeout);
-            System.out.println(socket.getInetAddress());
+            socket.setSoTimeout(soTimeout);
+            log.debug("client ip address: {}" ,socket.getInetAddress());
 
 
             //внутренный цикл
             final Request request = readRequest(in);
-            System.out.println("request = " + request);
+            log.debug("request: {} ",request);
 
             final Handler handler = routes.get(request.getPath());
 
@@ -115,7 +118,7 @@ public class Server {
             throw  new BadRequestException("Request Line not found");
         }
         final String requestLine = new String(buffer, 0, requestLineEndIndex, StandardCharsets.UTF_8);
-        System.out.println("requestLine = " + requestLine);
+
 
           final String [] parts  = requestLine.split(" ");
           request.setMethod(parts[0]);
